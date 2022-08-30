@@ -2,46 +2,41 @@ import socket
 
 localAddress    = ("localhost", 20001)
 bufferSize      = 1024
-fileRec         = "fileRecvFromClient."
+fileRecvName    = "fileRecvFromClient."
 
-# Create a datagram socket
+# Criando socket UDP
 UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-
-# Bind to address and ip
 print("Server is creating a UDP socket.")
+
+# Vinculando porta do socket ao endereço
 UDPServerSocket.bind(localAddress)
 print("UDP server up and listening!")
 
 nFile = 1
-# Listen for incoming datagrams
 while(True):
 
-    ##### RECEBENDO O TIPO
+    # Recebendo extensão do arquivo (pdf ou txt)
     data, addressClient = UDPServerSocket.recvfrom(bufferSize)
-    tipoRecebido = str(data.decode())
-    print("tipo recebido do cliente = ", tipoRecebido)
-    #####
+    extension = str(data.decode())
+    print("Extensão recebida do cliente = ", extension)
     
-    fileName = str(nFile) + fileRec + tipoRecebido
-    file = open(fileName, "wb")
-    file2 = open(fileName, "rb")
+    fileRecvName = str(nFile) + fileRecvName + extension
+    fileRecv = open(fileRecvName, "wb")
     
-    print("enviando a respsota...")
+    print("Enviando a resposta...")
     
-
     while(data != '\x18'.encode()):
-        data, addressClient = UDPServerSocket.recvfrom(bufferSize)
-        file.write(data)
-        UDPServerSocket.sendto(data, addressClient)
-
+        data, addressClient = UDPServerSocket.recvfrom(bufferSize) # recebendo pacote do cliente
+        fileRecv.write(data) # escrevendo no arquivo
+        UDPServerSocket.sendto(data, addressClient) # retornando pacote ao cliente
     
     print("##################################################")
-    print("Arquivo recebido: " + fileName)
+    print("Arquivo recebido e devolvido: " + fileRecvName)
     print("Client IP Address:{}".format(addressClient))
+
     UDPServerSocket.sendto('\x18'.encode(), addressClient)
-    file.close()
-    file2.close()
-    print("mandei a resposta!")
+    fileRecv.close()
+
     nFile += 1
     
     

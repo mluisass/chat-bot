@@ -1,7 +1,7 @@
 import socket
 
 serverAddress   = ("localhost", 20001)
-bufferSize      = 1024
+bufferSize      = 2048
 fileRec         = "fileRecvFromServer.pdf"
 
 # Create a UDP socket at client side

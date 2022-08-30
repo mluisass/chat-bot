@@ -2,38 +2,37 @@ import socket
 
 serverAddress   = ("localhost", 20001)
 bufferSize      = 1024
-fileRec         = "fileRecvFromServer."
+fileRecvName    = "fileRecvFromServer."
 
-# Create a UDP socket at client side
+# Criando um socket UDP para o cliente
 UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-print("digite o nome: ")
-fileNameIn = input()
+fileToSendName = input("Digite o nome do arquivo a ser enviado: ")
 
 
-#antes de mandar vou mandar o tipo 
-Tipo = fileNameIn.split('.')[1]
-bytesTipo = str.encode(Tipo)
-UDPClientSocket.sendto(bytesTipo, serverAddress)
-print("tipo enviado")
+# Enviando a extensão do arquivo (pdf ou txt)
+extension = fileToSendName.split('.')[1]
+UDPClientSocket.sendto(extension.encode(), serverAddress)
+print("Extensão enviada!")
 
+# Abrindo arquivos a ser enviado e o recebido do servidor
+fileRecvName += extension
+fileToSend = open(fileToSendName, "rb")
+fileRecv = open(fileRecvName,'wb')
 
-#enviando e recebendo:
-fileRec += Tipo
-file2 = open(fileRec,'wb')
-file = open(fileNameIn, "rb")
-bytesToSend = file.read(bufferSize)
-
+# Lendo um pacote do arquivo a ser enviado
+bytesToSend = fileToSend.read(bufferSize)
 
 print("Enviando...")
 while(bytesToSend):
-    UDPClientSocket.sendto(bytesToSend, serverAddress)
-    bytesToSend = file.read(bufferSize)
-    data, address = UDPClientSocket.recvfrom(bufferSize)
-    file2.write(data)
-    
+    UDPClientSocket.sendto(bytesToSend, serverAddress) # enviando pacote para o servidor
+    bytesToSend = fileToSend.read(bufferSize) # lendo novo pacote
+    data, address = UDPClientSocket.recvfrom(bufferSize) # recebendo pacote do servidor
+    fileRecv.write(data) # salvando no arquivo
 
 UDPClientSocket.sendto('\x18'.encode(), serverAddress)
-print("Envio realizado!")
-file.close()
-file2.close()
+
+print("Arquivo recebido:", fileRecvName)
+
+fileToSend.close()
+fileRecv.close()
 UDPClientSocket.close()
