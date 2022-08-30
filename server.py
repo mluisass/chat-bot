@@ -27,14 +27,13 @@ while(True):
     
     while(data != '\x18'.encode()):
         data, addressClient = UDPServerSocket.recvfrom(bufferSize) # recebendo pacote do cliente
-        fileRecv.write(data) # escrevendo no arquivo
-        UDPServerSocket.sendto(data, addressClient) # retornando pacote ao cliente
+        if(data != '\x18'.encode()):
+            fileRecv.write(data) # escrevendo no arquivo
+            UDPServerSocket.sendto(data, addressClient) # retornando pacote ao cliente
     
     print("##################################################")
     print("Arquivo recebido e devolvido: " + fileRecvName)
     print("Client IP Address:{}".format(addressClient))
-
-    UDPServerSocket.sendto('\x18'.encode(), addressClient)
     fileRecv.close()
 
     nFile += 1
