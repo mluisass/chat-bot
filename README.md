@@ -10,4 +10,4 @@
    Ambos os arquivos estão no formato referente ao arquivo enviado inicialmente pelo cliente.
 6. Se desejar enviar mais arquivos, basta voltar ao passo 3 e executar o cliente novamente. Não é necessário executar o servidor novamente, pois ele fica esperando por mais requisições do cliente.
 
-**OBS.: O arquivo que deseja enviar deve estar salvo na mesma pasta do projeto. Os arquivos de teste disponibilizados na atividade são: `image.pdf` e `TesteTXT.txt`.**
+**OBS.: O arquivo que deseja enviar deve estar salvo na mesma pasta do projeto. Os arquivos de teste disponibilizados na atividade são: `image.pdf` e `TesteTXT.txt`. Além disso, são mantidas copias dos arquivos recebidos pelo server, entretanto, os aquivos recebidos pelo client sao sobrescritos.**
