@@ -2,7 +2,7 @@ import socket
 
 localAddress    = ("localhost", 20001)
 bufferSize      = 1024
-fileRecvName    = "fileRecvFromClient."
+fileRec         = "fileRecvFromClient."
 
 # Criando socket UDP
 UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
@@ -20,7 +20,7 @@ while(True):
     extension = str(data.decode())
     print("Extensão recebida do cliente = ", extension)
     
-    fileRecvName = str(nFile) + fileRecvName + extension
+    fileRecvName = str(nFile) + fileRec + extension
     fileRecv = open(fileRecvName, "wb")
     
     print("Enviando a resposta...")
