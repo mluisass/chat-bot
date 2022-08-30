@@ -1,4 +1,11 @@
 # chat-bot
+Elisson Rodrigo da Silva Araujo
+
+Maria Luísa dos Santos Silva
+
+Rebecca Lima Sousa
+
+Tales Vinícius Alves da Cunha
 ### Instruções de execução da primeira entrega:
 1. Baixe a pasta e extraia os arquivos.
 2. Considerando que já tenha Python3 instalado, abra duas abas do terminal no diretório em que baixou a pasta.
