@@ -9,3 +9,5 @@
           "fileRecvFromServer" refere-se ao arquivo que o cliente recebeu em resposta do servidor.
    Ambos os arquivos estão no formato referente ao arquivo enviado inicialmente pelo cliente.
 6. Se desejar enviar mais arquivos, basta voltar ao passo 3 e executar o cliente novamente. Não é necessário executar o servidor novamente, pois ele fica esperando por mais requisições do cliente. 
+
+**OBS.: O arquivo que deseja enviar deve estar salvo na mesma pasta do projeto**
