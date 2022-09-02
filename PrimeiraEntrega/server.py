@@ -1,48 +1,40 @@
 import socket
-
-localAddress    = ("localhost", 20001)
-bufferSize      = 1024
-fileRec         = "fileRecvFromClient."
-
-# Criando socket UDP
-UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-print("Server is creating a UDP socket.")
-
-# Vinculando porta do socket ao endereço
-UDPServerSocket.bind(localAddress)
-print("UDP server up and listening!")
-
-nFile = 1
-while(True):
-
-    # Recebendo extensão do arquivo (pdf ou txt)
-    data, addressClient = UDPServerSocket.recvfrom(bufferSize)
-    extension = str(data.decode())
-    print("Extensão recebida do cliente = ", extension)
+from utils import *
     
-    fileRecvName = str(nFile) + fileRec + extension
-    fileRecv = open(fileRecvName, "wb")
-    
-    print("Enviando a resposta...")
-    
-    while(data != '\x18'.encode()):
-        data, addressClient = UDPServerSocket.recvfrom(bufferSize) # recebendo pacote do cliente
-        if(data != '\x18'.encode()):
-            fileRecv.write(data) # escrevendo no arquivo
-            UDPServerSocket.sendto(data, addressClient) # retornando pacote ao cliente
-    
-    print("##################################################")
-    print("Arquivo recebido e devolvido: " + fileRecvName)
-    print("Client IP Address:{}".format(addressClient))
-    fileRecv.close()
 
-    nFile += 1
-    
-    
-        
+
+class Server:
+    def __init__(self):
+        self.server_socket = UDP(True) # True => é servidor
+        self.current_user = None
+        self.last_data_received =None
+        self.users = {} # guarda histórico de mensagens de cada usuário
+
+        self.run()
+    def run(self):
+        while (True):
+            # recebe uma mensagem de um dos clientes
+            data, client_address = self.server_socket.receive()
+            print(data.decode())
+
+            self.last_data_received = data
+            self.current_user = client_address
+            
+            # salva um histórico de todas mensagens enviadas por cada cliente
+            if self.current_user not in self.users.keys():
+                self.users[self.current_user] = []
+            self.users[self.current_user].append(self.last_data_received.decode())
+
+            print("\nOLHA O HISTORICO DE MENSAGENS KKK\n")
+            for key in self.users.keys():
+                print(self.users[key])
+            print("\n\n")
+            # devolve ao cliente a mensagem enviada por ele
+            self.server_socket.send(self.last_data_received, self.current_user)
+
 
     
-    
-    
+if __name__ == "__main__":
+    Server()
 
     
