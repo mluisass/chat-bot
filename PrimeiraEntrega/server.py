@@ -14,7 +14,7 @@ class Server:
     def run(self):
         while (True):
             # recebe uma mensagem de um dos clientes
-            data, client_address = self.server_socket.receive()
+            data, client_address = self.server_socket.rdt_rcv()
             print(data.decode())
 
             self.last_data_received = data
@@ -25,12 +25,8 @@ class Server:
                 self.users[self.current_user] = []
             self.users[self.current_user].append(self.last_data_received.decode())
 
-            print("\nOLHA O HISTORICO DE MENSAGENS KKK\n")
-            for key in self.users.keys():
-                print(self.users[key])
-            print("\n\n")
             # devolve ao cliente a mensagem enviada por ele
-            self.server_socket.send(self.last_data_received, self.current_user)
+            self.server_socket.rdt_send(self.last_data_received, self.current_user)
 
 
     

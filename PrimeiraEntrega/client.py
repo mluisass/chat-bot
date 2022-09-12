@@ -11,10 +11,11 @@ class Client:
         while(True):
             # lê mensagem do teclado e envia ao servidor
             msg = input("manda uma mensagenzinha pro server: ")
-            self.client_socket.send(msg.encode(), server_address)
+            self.client_socket.rdt_send(msg.encode(), server_address)
 
             # recebe mensagem enviada
-            data, _ = self.client_socket.receive()  
+            data, _ = self.client_socket.rdt_rcv()
+            print(data.decode())
 if __name__ == "__main__":
     port = randint(3000,3100)
     print(port)
