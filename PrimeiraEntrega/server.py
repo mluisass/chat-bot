@@ -1,7 +1,4 @@
-import socket
 from utils import *
-    
-
 
 class Server:
     def __init__(self):
@@ -19,14 +16,12 @@ class Server:
 
             self.last_data_received = data
             self.current_user = client_address
-            
-            # salva um histórico de todas mensagens enviadas por cada cliente
-            if self.current_user not in self.users.keys():
-                self.users[self.current_user] = []
-            self.users[self.current_user].append(self.last_data_received.decode())
+
+            msg = eval(self.last_data_received.decode())
+            msg = msg['data']
 
             # devolve ao cliente a mensagem enviada por ele
-            self.server_socket.rdt_send(self.last_data_received, self.current_user)
+            self.server_socket.rdt_send(msg, self.current_user)
 
 
     
