@@ -1,14 +1,17 @@
 from utils import *
 
 class Server:
+    #inicializacao do servidor
     def __init__(self):
         self.server_socket = UDP(True) # True => é servidor
         self.current_user = None
         self.last_data_received =None
         self.users = {} # guarda histórico de mensagens de cada usuário
-
         self.run()
+
     def run(self):
+
+        #espera em loop infinito pelo contato de um cliente
         while (True):
             # recebe uma mensagem de um dos clientes
             data, client_address = self.server_socket.rdt_rcv()
