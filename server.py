@@ -6,7 +6,7 @@ class Server:
         self.server_socket = UDP(True) # True => é servidor
         self.current_user = None
         self.last_data_received =None
-        self.users = {} # guarda histórico de mensagens de cada usuário
+    
         self.run()
 
     def run(self):
