@@ -13,19 +13,22 @@ class Server:
 
         #espera em loop infinito pelo contato de um cliente
         while (True):
-            # recebe uma mensagem de um dos clientes
-            data, client_address = self.server_socket.rdt_rcv()
-            print(data.decode())
+            try:
+                # recebe uma mensagem de um dos clientes
+                data, client_address = self.server_socket.rdt_rcv()
+                print(data.decode())
 
-            self.last_data_received = data
-            self.current_user = client_address
+                self.last_data_received = data
+                self.current_user = client_address
 
-            msg = eval(self.last_data_received.decode())
-            msg = msg['data']
+                msg = eval(self.last_data_received.decode())
+                msg = msg['data']
 
-            # devolve ao cliente a mensagem enviada por ele
-            self.server_socket.rdt_send(msg, self.current_user)
-
+                # devolve ao cliente a mensagem enviada por ele
+                self.server_socket.rdt_send(msg, self.current_user)
+            except KeyboardInterrupt:
+                self.server_socket.close()
+                break
 
     
 if __name__ == "__main__":
