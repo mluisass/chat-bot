@@ -1,17 +1,18 @@
 from utils import *
 import threading as th
+from datetime import datetime
+
 class Server:
-    #inicializacao do servidor
+    # Inicialização do servidor
     def __init__(self):
         self.server_socket = UDP(True) # True => é servidor
-        self.current_user = None
-        self.last_data_received =None
-        self.users = {}
+        self.connected = {}
+        self.banned_users = []
 
         try:
             lock = th.Lock()
-            send_thread = th.Thread(target= self.broadcast, args=[lock, ""] )
-            rcv_thread = th.Thread(target= self.run, args=[lock])
+            send_thread = th.Thread(target= self.send_message, args=[lock])
+            rcv_thread = th.Thread(target= self.receive_message, args=[lock])
             
             send_thread.daemon =True 
             rcv_thread.daemon= True 
@@ -24,37 +25,103 @@ class Server:
 
         except KeyboardInterrupt:
             self.server_socket.close()
-        
+    
+    def send_message(self,lock):
+        # Checa se há pacotes para ser enviados e os envia
+        # Os pacotes a serem enviados podem ser reenvios, ACKS ou novas mensagens
 
-    def run(self, lock):
-        #espera em loop infinito pelo contato de um cliente
-        while (True):
-            try:
-                # recebe uma mensagem de um dos clientes
-                lock.acquire()
-                data, client_address = self.server_socket.rdt_rcv()
-                lock.release()
-                msg = eval(data.decode())
-                msg = msg['data']
-                print(msg[:15])
-                if msg[:15] == "hi, meu nome eh":
-                    print("entrei")
-                    user_name = msg[16:]
-                    self.users[user_name] = client_address # salva o usuário
-
-                    message = user_name + " entrou na sala"
-                    self.broadcast(lock, message)
+        while True:
+            lock.acquire()
+            self.server_socket.check_pkt_buffer()
+            [time, address, msg_received] = self.server_socket.check_ack('server')
+            self.server_tasks(time, address, msg_received)
+            self.server_socket.check_send_buffer('server')
+            lock.release()
             
-                
+            
+    def receive_message(self, lock):
+        # Tenta receber um pacote
+        # Cria o ACK referente a esse pacote e adiciona à lista de ACKs a serem enviados
+
+        while(True):
+            try:
+                pkt, address , time =  self.server_socket.rdt_rcv()
+                if pkt:
+                    dic = eval(pkt.decode())
+                    msg_rec = dic['data']
+                    lock.acquire()
+                    self.server_socket.add_ack(msg_rec, address, time)
+                    lock.release()
+                    print(msg_rec)
+
             except KeyboardInterrupt:
                 self.server_socket.close()
-                break
 
-    def broadcast(self, lock, msg):
-        lock.acquire()
-        for key in self.users:
-            self.server_socket.rdt_send(msg, self.users[key])
-        lock.release()
+    def broadcast(self, msg):
+        # Adiciona ao buffer de mensagens a ser enviadas
+        connected = self.server_socket.connected
+        for user_name in connected.keys():
+            self.server_socket.add_send_buffer(msg, connected[user_name]['address'])
+    
+    def add_new_connection(self, user_name, address):
+        # Inicia uma nova conexão
+        # Verifica se esse usuário pode entrar no chat => se ele já tiver conectado ou já foi banido, ele não pode
+
+        msg = ''
+        already_connected = False
+        for i in self.server_socket.connected:
+                if i.key()['user'] == user_name:
+                    already_connected = True
+                    break
+                    
+        if user_name not in self.banned_users and not already_connected:
+            msg = '----------' + user_name + ' entrou no chat' + '----------'
+            self.server_socket.connect(user_name, address)
+
+        return msg
+
+
+    def end_connection(self, address):
+        user_name = self.server_socket.get_user_name(address)
+        msg = ''
+        if user_name:
+            msg = '\n' + '----------' + user_name + ' saiu do chat' + '----------'
+            self.server_socket.disconnect(address)
+
+        return msg
+        
+    def server_tasks(self,time, address, msg_received):
+        # Verifica que ação o servidor deve realizar:
+            # 1. nova conexão
+            # 2. bye
+            # 3. list
+            # 4. mensagem privada
+            # 5. ban
+
+            N = datetime.now()
+            t = N.timetuple()
+
+            _,_,_,h,min,sec,_,_,_ = t
+                
+            time = self.server_socket.get_str(h) + ':' + self.server_socket.get_str(min) + ':' + self.server_socket.get_str(sec)
+
+            msg =  str(time) + ' ' + self.server_socket.get_user_name(address) + ': ' + msg_received
+
+            # 1. Nova conexão
+            if len(msg_received) >= 17 and msg_received[:16] == 'hi, meu nome eh ':
+                user_name = msg_received[16:]
+                msg = self.add_new_connection(user_name)
+                self.server_socket.add_send_buffer(msg.encode(), address)
+
+            # 2. Desconectar usuário (bye)
+            if msg_received == 'bye':
+                msg = self.end_connection(address)
+                self.server_socket.add_send_buffer(msg.encode(), address)
+
+            if msg_received == 'list':
+                msg = msg + '\n' + self.server_socket.get_connecteds()
+                self.server_socket.add_send_buffer(msg.encode(), address)
+
 
     
 if __name__ == "__main__":  
