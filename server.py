@@ -6,7 +6,6 @@ class Server:
     # Inicialização do servidor
     def __init__(self):
         self.server_socket = UDP(True) # True => é servidor
-        self.connected = {}
         self.banned_users = []
 
         try:
@@ -34,7 +33,8 @@ class Server:
             lock.acquire()
             self.server_socket.check_pkt_buffer()
             [time, address, msg_received] = self.server_socket.check_ack('server')
-            self.server_tasks(time, address, msg_received)
+            if msg_received:
+                self.server_tasks(time, address, msg_received)
             self.server_socket.check_send_buffer('server')
             lock.release()
             
@@ -60,17 +60,17 @@ class Server:
     def broadcast(self, msg):
         # Adiciona ao buffer de mensagens a ser enviadas
         connected = self.server_socket.connected
-        for user_name in connected.keys():
-            self.server_socket.add_send_buffer(msg, connected[user_name]['address'])
+        for address in connected.keys():
+            self.server_socket.add_send_buffer(msg, address)
     
     def add_new_connection(self, user_name, address):
         # Inicia uma nova conexão
         # Verifica se esse usuário pode entrar no chat => se ele já tiver conectado ou já foi banido, ele não pode
-
         msg = ''
         already_connected = False
-        for i in self.server_socket.connected:
-                if i.key()['user'] == user_name:
+        connected = self.server_socket.connected
+        for user_address in connected.keys():
+                if connected[user_address]['user'] == user_name:
                     already_connected = True
                     break
                     
@@ -105,22 +105,25 @@ class Server:
                 
             time = self.server_socket.get_str(h) + ':' + self.server_socket.get_str(min) + ':' + self.server_socket.get_str(sec)
 
-            msg =  str(time) + ' ' + self.server_socket.get_user_name(address) + ': ' + msg_received
+            msg =  str(time) + ' ' + self.server_socket.get_user_name(address) + ': ' + str(msg_received)
 
             # 1. Nova conexão
             if len(msg_received) >= 17 and msg_received[:16] == 'hi, meu nome eh ':
                 user_name = msg_received[16:]
-                msg = self.add_new_connection(user_name)
-                self.server_socket.add_send_buffer(msg.encode(), address)
+                msg = self.add_new_connection(user_name, address)
+                # self.server_socket.add_send_buffer(msg, address)
+                
 
             # 2. Desconectar usuário (bye)
             if msg_received == 'bye':
                 msg = self.end_connection(address)
-                self.server_socket.add_send_buffer(msg.encode(), address)
+                # self.server_socket.add_send_buffer(msg, address)
 
             if msg_received == 'list':
                 msg = msg + '\n' + self.server_socket.get_connecteds()
-                self.server_socket.add_send_buffer(msg.encode(), address)
+                # self.server_socket.add_send_buffer(msg, address)
+
+            self.broadcast(msg)
 
 
     

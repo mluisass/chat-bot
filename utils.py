@@ -36,12 +36,13 @@ class UDP:
     
     # envio de um pacote
     def rdt_send(self, msg, time, address):
+    
         # Prepara um pacote e envia
         if msg == "ACK":
             # Se a mensagem é um ACK, eu sou um receptor
             # Então, envio o ACK para o endereço e atualizo o número de sequência
             pkt = self.__make_pkt(msg, self.__get_sequence('receiver', address), time)
-            self.__send(pkt,address)
+            self.__send(pkt, address)
             self.__update_sequence('receiver',address)
         else:
             # Se não for um ACK, eu um sender querendo enviar uma mensagem
@@ -146,22 +147,23 @@ class UDP:
             self.rdt_send(msg, 0, address) # Reenvia mensagem
 
 
-    def __get_sequence(self,type, address):
+    def __get_sequence(self, type, address):
         # Retorna o número de sequência referente a um endereço em específico 
         # Cada endereço (usuário) possui um número de sequência para seu modo receptor e transmissor
 
         if address in self.connected:
-            return self.connect[address]['seqNumber'][type]
+            return self.connected[address]['seqNumber'][type]
+        return 0
     
     def check_ack(self, type):
         # Checa se existem ACKs a serem enviados e envia
         # Caso o ACK seja para um 'bye', retorna True, indicando que o usuário será desconectado
-        
         if len(self.acks):
             [msg, time, address, msg_received] = self.acks[0]
             self.acks.pop(0)
 
-            self.rdt_send(msg, time, address)
+            if address:
+                self.rdt_send(msg, time, address)
             
             if type == "client" and self.bye == True:
                 return time, address, 'bye'
@@ -169,10 +171,11 @@ class UDP:
             if type == "server" and msg_received:
                 return time, address, msg_received
 
-                
-        return '', '', ''
+             
+        return '', ('',0), ''
+
     def get_connecteds(self):
-        msg_list = '---- users list ----'
+        msg_list = '---- Lista de usuários ----'
         for address in self.connected:
             msg_list += '\n' + str(self.connected[address]['user'])
         msg_list += '\n--------------------'
@@ -200,7 +203,7 @@ class UDP:
             #     if len(msg) == 3 and msg =='bye':
             #         self.disconnect(address_to) => isso ia fazer o servidor desconectar todo mundo
                     
-    def add_ack(self,time,msg_received,address):
+    def add_ack(self,msg_received, address, time):
         # Adiciona a mensagem recebida ao vetor de ACKs para posterior envio de ACK
 
         msg = "ACK"
@@ -218,7 +221,7 @@ class UDP:
 
     def get_user_name(self, address):
         if address in self.connected.keys():
-            return self.connected[address]['user']
+            return str(self.connected[address]['user'])
         return ''
 
     def disconnect(self, address):
