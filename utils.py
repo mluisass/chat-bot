@@ -16,18 +16,29 @@ class UDP:
         self.connected = {}
         self.acks = [] # ACKs a serem enviados
         self.bye = False
-        if (server):
+
+        self.server = server 
+
+        self.server_address = SERVER_ADDRESS
+
+        if server:
             self.UDPsocket.bind(SERVER_ADDRESS)
             print("Servidor ligado")
         
     #recebimento de pacote
     def __receive(self):
         package, address = self.UDPsocket.recvfrom(BUFFER_SIZE)
+
+        # Caso seja o cliente, precisa conhecer o endereço do servidor
+        if not self.server and address not in self.connected:
+            self.server_address = address
+            self.connect("server", address)
+
         return (package,address)
     
     # envio de pacote 
     def __send(self, package, address):
-        self.UDPsocket.sendto(package, address) # para o cliente: address = SERVER_ADDRESS
+        self.UDPsocket.sendto(package, address) # para o cliente: address => SERVER_ADDRESS
     
     # encerra a conexão
     def close(self):
@@ -36,7 +47,6 @@ class UDP:
     
     # envio de um pacote
     def rdt_send(self, msg, time, address):
-    
         # Prepara um pacote e envia
         if msg == "ACK":
             # Se a mensagem é um ACK, eu sou um receptor
@@ -44,6 +54,8 @@ class UDP:
             pkt = self.__make_pkt(msg, self.__get_sequence('receiver', address), time)
             self.__send(pkt, address)
             self.__update_sequence('receiver',address)
+            print("update ", address, self.__get_sequence('receiver', address))
+
         else:
             # Se não for um ACK, eu um sender querendo enviar uma mensagem
             # Então, crio o pacote, envio e salvo o pacote enviado em um buffer pra 
@@ -57,7 +69,7 @@ class UDP:
                 'pkt': pkt,
                 'address': address
             }
-
+            # print ("mandei " + str(pkt) + " pra " + str(address))
             self.__send(pkt, address)
 
             # Checa se a mensagem a ser enviada é um 'bye', indicando que o cliente será desconectado
@@ -81,6 +93,8 @@ class UDP:
         msg = eval(pkt.decode())
         time = msg['time']
 
+        # TODO: corrigir problema na atualização do número de sequência
+
         if not self.__is_ack(msg) and self.__check_seq(pkt, address, 'receiver'):
             # Se a mensagem não for um ACK eu retorno o pacote recebido
             return pkt, address, time
@@ -93,7 +107,7 @@ class UDP:
         
         # Retorno um pacote vazio para que não seja adicionado um ACK à lista de ACKs
         return '', address, time  
-
+    
     # verifica se a mensagem é um ACK
     def __is_ack(self, msg):
         return (msg['data'] == 'ACK')
@@ -107,16 +121,17 @@ class UDP:
             
     def __update_sequence(self, type, address):
         # Atualiza o numero de sequência
-        if address in self.connected:
+        if address in self.connected.keys():
             self.connected[address]['seqNumber'][type] = 1 - self.connected[address]['seqNumber'][type]
 
-    def add_send_buffer(self, msg, address=SERVER_ADDRESS):
+    def add_send_buffer(self, msg, address):
         # Adiciona mensagem ao buffer de mensagens a serem enviadas
         self.send_buffer.append((msg,address)) # Mensagem e pra quem eu quero enviar
 
     def check_pkt_buffer(self):
         # Deleta do buffer de pacotes enviados aqueles que receberam ACK
         # OBS: os pacotes são referenciados pelo tempo em que foram enviados
+
         for time in self.delete_buffer:
             if time in self.pkt_buffer:
                 del self.pkt_buffer[time]
@@ -134,7 +149,7 @@ class UDP:
             # Se o pacote não foi o que eu LITERALMENTE acabei de mandar (ou seja, se ele é antigo)
             if t.seconds > 0:
                 to_resend.append(time)
-        
+
         for time in to_resend:
             # Pega o pacote que foi enviado no tempo
             pkt = self.pkt_buffer[time]['pkt']
@@ -153,11 +168,13 @@ class UDP:
 
         if address in self.connected:
             return self.connected[address]['seqNumber'][type]
+
         return 0
     
     def check_ack(self, type):
         # Checa se existem ACKs a serem enviados e envia
         # Caso o ACK seja para um 'bye', retorna True, indicando que o usuário será desconectado
+
         if len(self.acks):
             [msg, time, address, msg_received] = self.acks[0]
             self.acks.pop(0)
@@ -176,7 +193,7 @@ class UDP:
 
     def get_connecteds(self):
         msg_list = '---- Lista de usuários ----'
-        for address in self.connected:
+        for address in self.connected.keys():
             msg_list += '\n' + str(self.connected[address]['user'])
         msg_list += '\n--------------------'
         return msg_list
@@ -195,20 +212,13 @@ class UDP:
             # Envia primeira mensagem do buffer
             msg, address_to = self.send_buffer[0]
             self.send_buffer.pop(0)
-            self.rdt_send(msg, 0, address_to) # TODO: pq o tempo é zero?
-            
-            # TODO: ver se é necessário checar o bye tantas vezes
-            # if type =='server':
-            #     msg = msg.decode()
-            #     if len(msg) == 3 and msg =='bye':
-            #         self.disconnect(address_to) => isso ia fazer o servidor desconectar todo mundo
+            self.rdt_send(msg, 0, address_to) # mileto, pq o tempo é zero?
                     
     def add_ack(self,msg_received, address, time):
         # Adiciona a mensagem recebida ao vetor de ACKs para posterior envio de ACK
-
+        
         msg = "ACK"
         self.acks.append((msg, time, address, msg_received))
-        
         
     def connect(self, user_name, address):
         self.connected[address] = {

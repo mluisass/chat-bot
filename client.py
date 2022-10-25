@@ -7,6 +7,7 @@ class Client:
         self.user_name = ''
         self.port = port
         self.client_socket = UDP(False) # False => é cliente
+
         try:
             lock = th.Lock() 
             send_thread = th.Thread(target= self.send_message, args=[lock] )
@@ -62,6 +63,7 @@ class Client:
                     lock.release()
 
                     print(msg_rec)
+                    
             except KeyboardInterrupt:
                 self.client_socket.close()
                 
@@ -74,7 +76,7 @@ class Client:
                 break
             
             lock.acquire()
-            self.client_socket.add_send_buffer(msg)
+            self.client_socket.add_send_buffer(msg, self.client_socket.server_address)
             lock.release()
             
             if msg == 'bye':

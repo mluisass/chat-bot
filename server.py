@@ -1,3 +1,4 @@
+from http import server
 from utils import *
 import threading as th
 from datetime import datetime
@@ -111,17 +112,13 @@ class Server:
             if len(msg_received) >= 17 and msg_received[:16] == 'hi, meu nome eh ':
                 user_name = msg_received[16:]
                 msg = self.add_new_connection(user_name, address)
-                # self.server_socket.add_send_buffer(msg, address)
                 
-
             # 2. Desconectar usuário (bye)
             if msg_received == 'bye':
                 msg = self.end_connection(address)
-                # self.server_socket.add_send_buffer(msg, address)
 
             if msg_received == 'list':
                 msg = msg + '\n' + self.server_socket.get_connecteds()
-                # self.server_socket.add_send_buffer(msg, address)
 
             self.broadcast(msg)
 
