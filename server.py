@@ -11,11 +11,11 @@ class Server:
 
         try:
             lock = th.Lock()
-            send_thread = th.Thread(target= self.send_message, args=[lock])
-            rcv_thread = th.Thread(target= self.receive_message, args=[lock])
+            send_thread = th.Thread(target = self.send_message, args=[lock])
+            rcv_thread  = th.Thread(target = self.receive_message, args=[lock])
             
-            send_thread.daemon =True 
-            rcv_thread.daemon= True 
+            send_thread.daemon  = True 
+            rcv_thread.daemon   = True 
 
             send_thread.start()
             rcv_thread.start()
@@ -38,7 +38,6 @@ class Server:
                 self.server_tasks(time, address, msg_received)
             self.server_socket.check_send_buffer('server')
             lock.release()
-            
             
     def receive_message(self, lock):
         # Tenta receber um pacote
@@ -81,7 +80,6 @@ class Server:
 
         return msg
 
-
     def end_connection(self, address):
         user_name = self.server_socket.get_user_name(address)
         msg = ''
@@ -117,9 +115,10 @@ class Server:
             if msg_received == 'bye':
                 msg = self.end_connection(address)
 
+            # 3. Listar usuários conectados (list)
             if msg_received == 'list':
                 msg = msg + '\n' + self.server_socket.get_connecteds()
-
+                
             self.broadcast(msg)
 
 

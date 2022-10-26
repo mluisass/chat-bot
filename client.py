@@ -12,7 +12,7 @@ class Client:
             lock = th.Lock() 
             send_thread = th.Thread(target= self.send_message, args=[lock] )
             rcv_thread = th.Thread(target= self.receive_message, args=[lock])
-            write_thread = th.Thread(target= self.read_message , args = [lock])
+            write_thread = th.Thread(target= self.read_message , args=[lock])
 
             send_thread.daemon =True 
             rcv_thread.daemon = True 
@@ -29,7 +29,7 @@ class Client:
         except KeyboardInterrupt:
             self.client_socket.close()
 
-    def send_message(self,lock):
+    def send_message(self, lock):
         # Checa se há pacotes para ser enviados e os envia
         # Os pacotes a serem enviados podem ser reenvios, ACKS ou novas mensagens
 
@@ -72,6 +72,7 @@ class Client:
         while True:
             try: 
                 msg = input()
+                print("\033[A                             \033[A")
             except EOFError:
                 break
             
