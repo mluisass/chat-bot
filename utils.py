@@ -222,7 +222,11 @@ class UDP:
             'user': user_name,
             'seqNumber': {
                 'sender': 0 ,
-                'receiver': 0 
+                'receiver': 0
+            },
+            'ban': {
+                'count': 0,
+                'time' : datetime.now()
             }
         }
 
@@ -234,3 +238,10 @@ class UDP:
     def disconnect(self, address):
         if address in self.connected.keys():
            del self.connected[address]
+    
+    def find_address(self, user_name):
+        for user_address in self.connected.keys():
+                if self.connected[user_address]['user'] == user_name:
+                    return user_address
+        
+        return ''

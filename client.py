@@ -65,6 +65,7 @@ class Client:
                     print(msg_rec)
                     
             except KeyboardInterrupt:
+                
                 self.client_socket.close()
                 
     def read_message(self, lock):
