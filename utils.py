@@ -4,7 +4,6 @@ from datetime import datetime
 import socket
 
 class UDP:
-    #inicializaçao
     def __init__(self, server):
         # server => true or false
         self.UDPsocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
@@ -14,7 +13,7 @@ class UDP:
         self.pkt_buffer = {} # Pacotes enviados sem confirmação (ACK)
         self.delete_buffer = []
         self.connected = {}
-        self.acks = [] # ACKs a serem enviados
+        self.ack_buffer = [] # ACKs a serem enviados
         self.bye = False
 
         self.server = server 
@@ -24,8 +23,10 @@ class UDP:
         if server:
             self.UDPsocket.bind(SERVER_ADDRESS)
             print("Servidor ligado")
-    #recebimento de pacote
+    
     def __receive(self):
+        #Recebimento de pacote
+
         package, address = self.UDPsocket.recvfrom(BUFFER_SIZE)
 
         # Caso seja o cliente, precisa conhecer o endereço do servidor
@@ -34,14 +35,45 @@ class UDP:
             self.connect("server", address)
 
         return (package,address)
-    # envio de pacote 
+    
+    # ------------------------ Número de Sequência ---------------------------------
+
+    def __get_sequence(self, type, address):
+        # Retorna o número de sequência referente a um endereço em específico 
+        # Cada endereço (usuário) possui um número de sequência para seu modo receptor e transmissor
+
+        if address in self.connected:
+            return self.connected[address]['seqNumber'][type]
+        return 0
+
+    def __check_seq(self, pkt, address, type = 'sender'):
+        # Verifica se o pacote recebido foi o esperado
+        # Ou seja, se o número de sequência do pacote é o mesmo armazenado
+
+        msg = eval(pkt.decode())
+        seq = self.__get_sequence(type, address)
+
+        return seq == msg['seq']
+
+    def __update_sequence(self, type, address):
+        # Atualiza o numero de sequência
+        if address in self.connected:
+            self.connected[address]['seqNumber'][type] = 1 - self.__get_sequence(type, address)
+            self.sequence = self.__get_sequence(type, address)
+    
+    # ------------------------ Preparar/transmitir mensagem (send) ---------------------------------
+
     def __send(self, package, address):
-        self.UDPsocket.sendto(package, address) # para o cliente: address => 
-    # encerra a conexão
-    def close(self):
-        print("\nConexão encerrada")
-        self.UDPsocket.close() 
-    # envio de um pacote
+        # Envio de pacote 
+        self.UDPsocket.sendto(package, address)
+
+    def __make_pkt(self , msg, seq, time):
+        # Cria o pacote com cabeçalho
+        return str({
+            'data':msg,
+            'seq':seq,
+            'time': time}).encode()
+
     def rdt_send(self, msg, time, address):
         # Prepara um pacote e envia
         if msg == "ACK":
@@ -65,66 +97,42 @@ class UDP:
                 'pkt': pkt,
                 'address': address
             }
-            # print ("mandei " + str(pkt) + " pra " + str(address))
+            
             self.__send(pkt, address)
 
             # Checa se a mensagem a ser enviada é um 'bye', indicando que o cliente será desconectado
             if msg == "bye":
                 self.bye = True      
 
-    def __check_seq(self, pkt, address, type = 'sender'):
-        # Verifica se o pacote recebido foi o esperado
-        # Ou seja, se o número de sequência do pacote é o mesmo armazenado
+    def check_ack(self, type):
+        # Checa se existem ACKs a serem enviados e envia
+        # Caso o ACK seja para um 'bye', retorna True, indicando que o usuário será desconectado
 
-        msg = eval(pkt.decode())
-        seq = self.__get_sequence(type, address)
+        if len(self.ack_buffer):
+            [msg, time, address, msg_received] = self.ack_buffer[0]
+            self.ack_buffer.pop(0)
 
-        return seq == msg['seq']
-
-    def rdt_rcv(self):
-        # Recebe um pacote e checa o conteúdo
-
-        
-
-        pkt, address = self.__receive() # Recebe um pacote
-        msg = eval(pkt.decode())
-        time = msg['time']
-
-        # TODO: corrigir problema na atualização do número de sequência
-
-        if not self.__is_ack(msg) and self.__check_seq(pkt, address, 'receiver'):
-            # Se a mensagem não for um ACK eu retorno o pacote recebido
-            return pkt, address, time
-        
-        # Se a mensagem recebida foi um ACK, eu sou um transmissor que recebeu confirmação do pacote transmitido
-        # Então, checo se o número de sequência era o que eu tava esperando
-        if self.__is_ack(msg) and self.__check_seq(pkt, address, 'sender'):
-            self.delete_buffer.append(time) # A mensagem foi recebida corretamente e pode ser deletada do pkt_buffer
-            self.__update_sequence('sender', address)
-
-        
-        # Retorno um pacote vazio para que não seja adicionado um ACK à lista de ACKs
-        return '', address, time  
-    # verifica se a mensagem é um ACK
-    def __is_ack(self, msg):
-        return (msg['data'] == 'ACK')
-    
-    def __make_pkt(self , msg, seq, time):
-        # Cria o pacote com cabeçalho
-        return str({
-            'data':msg,
-            'seq':seq,
-            'time': time}).encode()
+            if address:
+                self.rdt_send(msg, time, address)
             
-    def __update_sequence(self, type, address):
-        # Atualiza o numero de sequência
-        if address in self.connected:
-            self.connected[address]['seqNumber'][type] = 1 - self.connected[address]['seqNumber'][type]
-            self.sequence = self.connected[address]['seqNumber'][type]
+            if type == "client" and self.bye == True:
+                return time, address, 'bye'
+                
+            if type == "server" and msg_received:
+                return time, address, msg_received
+        return '', ('',0), ''
 
-    def add_send_buffer(self, msg, address):
-        # Adiciona mensagem ao buffer de mensagens a serem enviadas
-        self.send_buffer.append((msg,address)) # Mensagem e pra quem eu quero enviar
+    def check_send_buffer(self):
+        # Checa se existe alguma mensagem nova para enviar e envia
+        # Caso seja o servidor e a mensagem enviada for um 'bye', desconecta o usuário que enviou o 'bye'
+
+        if len(self.send_buffer):
+            # Envia primeira mensagem do buffer
+            msg, address_to = self.send_buffer[0]
+            self.send_buffer.pop(0)
+            self.rdt_send(msg, 0, address_to) # mileto, pq o tempo é zero?
+             
+        
 
     def check_pkt_buffer(self):
         # Deleta do buffer de pacotes enviados aqueles que receberam ACK
@@ -159,64 +167,56 @@ class UDP:
             msg = dic['data']
             self.rdt_send(msg, 0, address) # Reenvia mensagem
 
-    def __get_sequence(self, type, address):
-        # Retorna o número de sequência referente a um endereço em específico 
-        # Cada endereço (usuário) possui um número de sequência para seu modo receptor e transmissor
+    # ------------------------ Receber mensagem ---------------------------------
 
-        if address in self.connected:
-            return self.connected[address]['seqNumber'][type]
+    def __is_ack(self, msg):
+        # Verifica se a mensagem é um ACK
+        return (msg['data'] == 'ACK')
 
+    def rdt_rcv(self):
+        # Recebe um pacote e checa o conteúdo
 
-        return 0
-    
-    def check_ack(self, type):
-        # Checa se existem ACKs a serem enviados e envia
-        # Caso o ACK seja para um 'bye', retorna True, indicando que o usuário será desconectado
+        pkt, address = self.__receive() # Recebe um pacote
+        msg = eval(pkt.decode())
+        time = msg['time']
 
-        if len(self.acks):
-            [msg, time, address, msg_received] = self.acks[0]
-            self.acks.pop(0)
+        if not self.__is_ack(msg) and self.__check_seq(pkt, address, 'receiver'):
+            # Se a mensagem não for um ACK eu retorno o pacote recebido
+            return pkt, address, time
+        
+        # Se a mensagem recebida foi um ACK, eu sou um transmissor que recebeu confirmação do pacote transmitido
+        # Então, checo se o número de sequência era o que eu tava esperando
+        if self.__is_ack(msg) and self.__check_seq(pkt, address, 'sender'):
+            self.delete_buffer.append(time) # A mensagem foi recebida corretamente e pode ser deletada do pkt_buffer
+            self.__update_sequence('sender', address)
 
-            if address:
-                self.rdt_send(msg, time, address)
-            
-            if type == "client" and self.bye == True:
-                return time, address, 'bye'
-                
-            if type == "server" and msg_received:
-                return time, address, msg_received
+        
+        # Retorno um pacote vazio para que não seja adicionado um ACK à lista de ACKs
+        return '', address, time  
 
-             
-        return '', ('',0), ''
+    def add_send_buffer(self, msg, address):
+        # Adiciona mensagem ao buffer de mensagens a serem enviadas
+        self.send_buffer.append((msg,address)) # Mensagem e pra quem eu quero enviar
+        
+    def add_ack(self,msg_received, address, time):
+        # Adiciona a mensagem recebida ao vetor de ACKs para posterior envio de ACK
+        msg = "ACK"
+        self.ack_buffer.append((msg, time, address, msg_received))
+
+    # ------------------------ Conexão ---------------------------------
+
+    def close(self):
+        # Encerra a conexão
+        print("\nConexão encerrada")
+        self.UDPsocket.close() 
 
     def get_connecteds(self):
-        msg_list = '---- Lista de usuários ----'
+        msg_list = '---- lista de usuários ----'
         for address in self.connected.keys():
             msg_list += '\n' + str(self.connected[address]['user'])
         msg_list += '\n--------------------'
         return msg_list
-        
-    def get_str(self, t):
-        if t < 10:
-            return '0' + str(t)
-        
-        return str(t)
-
-    def check_send_buffer(self,type):
-        # Checa se existe alguma mensagem nova para enviar e envia
-        # Caso seja o servidor e a mensagem enviada for um 'bye', desconecta o usuário que enviou o 'bye'
-
-        if len(self.send_buffer):
-            # Envia primeira mensagem do buffer
-            msg, address_to = self.send_buffer[0]
-            self.send_buffer.pop(0)
-            self.rdt_send(msg, 0, address_to) # mileto, pq o tempo é zero?
-                    
-    def add_ack(self,msg_received, address, time):
-        # Adiciona a mensagem recebida ao vetor de ACKs para posterior envio de ACK
-        msg = "ACK"
-        self.acks.append((msg, time, address, msg_received))
-        
+  
     def connect(self, user_name, address):
         self.connected[address] = {
             'user': user_name,
@@ -243,5 +243,4 @@ class UDP:
         for user_address in self.connected.keys():
                 if self.connected[user_address]['user'] == user_name:
                     return user_address
-        
         return ''
