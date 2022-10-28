@@ -2,29 +2,27 @@ from random import randint
 from utils import *
 import threading as th
 class Client:
-    #inicializacao do cliente
-    def __init__(self, port):
-        self.user_name = ''
-        self.port = port
+    def __init__(self):
+        # Inicia o socket
         self.client_socket = UDP(False) # False => é cliente
 
         try:
             lock = th.Lock() 
             send_thread = th.Thread(target= self.send_message, args=[lock] )
             rcv_thread = th.Thread(target= self.receive_message, args=[lock])
-            write_thread = th.Thread(target= self.read_message , args=[lock])
+            input_thread = th.Thread(target= self.read_message , args=[lock])
 
             send_thread.daemon =True 
             rcv_thread.daemon = True 
-            write_thread.daemon =True
+            input_thread.daemon =True
 
             send_thread.start()
             rcv_thread.start()
-            write_thread.start()
+            input_thread.start()
 
             send_thread.join()
             rcv_thread.join()
-            write_thread.join()
+            input_thread.join()
             
         except KeyboardInterrupt:
             self.client_socket.close()
@@ -39,7 +37,7 @@ class Client:
             self.client_socket.check_pkt_buffer() # Reenvia pacotes que o timeout estourou
             _, _, msg = self.client_socket.check_ack('client') # Envia ACKs
             leave = msg == 'bye'
-            self.client_socket.check_send_buffer('client') # Envia novas mensagens
+            self.client_socket.check_send_buffer() # Envia novas mensagens
             lock.release()
             
             
@@ -85,6 +83,4 @@ class Client:
                 break
 
 if __name__ == "__main__":
-    port = randint(3000,3100)
-    print(port)
-    Client(port)
+    Client()
