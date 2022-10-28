@@ -124,10 +124,7 @@ class Server:
             # 4. mensagem privada
             # 5. ban
 
-            N = datetime.now()
-            t = N.timetuple()
-
-            _,_,_,h,min,sec,_,_,_ = t
+            _,_,_,h,min,sec,_,_,_ = datetime.now().timetuple()
                 
             time = self.__get_str(h) + ':' + self.__get_str(min) + ':' + self.__get_str(sec)
 
@@ -153,12 +150,14 @@ class Server:
             if msg_received[0] == '@':
                 user_name, _ = msg_received[1:].split(' ', 1)
                 priv_address = self.server_socket.find_address(user_name)
+
                 if priv_address:
                     self.server_socket.add_send_buffer(msg, priv_address)
                     self.server_socket.add_send_buffer(msg, address)
                 return
             
             self.broadcast(msg)
+
             if len(self.banned_users):
                 banned_address = self.server_socket.find_address(self.banned_users[-1])
                 self.server_socket.disconnect(banned_address)

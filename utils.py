@@ -74,7 +74,7 @@ class UDP:
             'seq':seq,
             'time': time}).encode()
 
-    def rdt_send(self, msg, time, address):
+    def __rdt_send(self, msg, time, address):
         # Prepara um pacote e envia
         if msg == "ACK":
             # Se a mensagem é um ACK, eu sou um receptor
@@ -113,7 +113,7 @@ class UDP:
             self.ack_buffer.pop(0)
 
             if address:
-                self.rdt_send(msg, time, address)
+                self.__rdt_send(msg, time, address)
             
             if type == "client" and self.bye == True:
                 return time, address, 'bye'
@@ -130,7 +130,7 @@ class UDP:
             # Envia primeira mensagem do buffer
             msg, address_to = self.send_buffer[0]
             self.send_buffer.pop(0)
-            self.rdt_send(msg, 0, address_to) # mileto, pq o tempo é zero?
+            self.__rdt_send(msg, 0, address_to) # mileto, pq o tempo é zero?
              
         
 
@@ -165,7 +165,7 @@ class UDP:
 
             dic = eval(pkt.decode())
             msg = dic['data']
-            self.rdt_send(msg, 0, address) # Reenvia mensagem
+            self.__rdt_send(msg, 0, address) # Reenvia mensagem
 
     # ------------------------ Receber mensagem ---------------------------------
 
@@ -214,7 +214,7 @@ class UDP:
         msg_list = '---- lista de usuários ----'
         for address in self.connected.keys():
             msg_list += '\n' + str(self.connected[address]['user'])
-        msg_list += '\n--------------------'
+        msg_list += '\n---------------------------'
         return msg_list
   
     def connect(self, user_name, address):
