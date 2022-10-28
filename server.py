@@ -37,7 +37,7 @@ class Server:
             [time, address, msg_received] = self.server_socket.check_ack('server')
             if msg_received:
                 self.server_tasks(time, address, msg_received)
-            self.server_socket.check_send_buffer('server')
+            self.server_socket.check_send_buffer()
             lock.release()
             
     def receive_message(self, lock):
@@ -110,7 +110,12 @@ class Server:
     
         return msg
     
+    def __get_str(self, t):
+        if t < 10:
+            return '0' + str(t)
         
+        return str(t)
+    
     def server_tasks(self,time, address, msg_received):
         # Verifica que ação o servidor deve realizar:
             # 1. nova conexão
@@ -124,7 +129,7 @@ class Server:
 
             _,_,_,h,min,sec,_,_,_ = t
                 
-            time = self.server_socket.get_str(h) + ':' + self.server_socket.get_str(min) + ':' + self.server_socket.get_str(sec)
+            time = self.__get_str(h) + ':' + self.__get_str(min) + ':' + self.__get_str(sec)
 
             msg =  str(time) + ' ' + self.server_socket.get_user_name(address) + ': ' + str(msg_received)
 
@@ -155,9 +160,10 @@ class Server:
             
             self.broadcast(msg)
             if len(self.banned_users):
-                self.server_socket.disconnect(self.banned_users[-1])
+                banned_address = self.server_socket.find_address(self.banned_users[-1])
+                self.server_socket.disconnect(banned_address)
 
-
+        
     
 if __name__ == "__main__":  
     Server()
