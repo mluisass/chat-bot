@@ -8,9 +8,9 @@
 
 * Tales Vinícius Alves da Cunha (tvac)
 
-## Instruções de execução da segunda entrega
+## Instruções de execução da terceira entrega
 1. Baixe a pasta e extraia os arquivos.
-2. Considerando que já tenha Python3 instalado, abra duas abas do terminal no diretório em que baixou a pasta.
+2. Considerando que já tenha Python3 instalado, abra, no mínimo, duas abas do terminal no diretório em que baixou a pasta.
 3. Em uma das abas execute o comando: 
    ```
    python3 server.py
@@ -20,9 +20,9 @@
    ```
    python3 client.py
    ```
-5. Na aba do cliente, digite a mensagem que deseja enviar, respeitando o limite de 1000 caracteres.
-6. Observe que a mensagem foi enviada e recebida de volta.
-7. Caso deseje enviar mais mensagens do mesmo cliente, retorne ao passo 5.
-8. Caso deseje mandar mensagens de um novo cliente, retorne ao passo 4, abrindo uma nova aba do terminal para o novo cliente.
-
-
+5. Você pode iniciar vários clientes repetindo o passo 3 em mais abas do terminal.
+6. Para entrar no chat da sala use o comando "hi, meu nome é <nome_de_usuario>" indicando o nome de usuário que deseja usar.
+7. Para sair da sala use o comando "bye".
+8. Para exibir a lista de usuários conectados à sala use o comando "list".
+9. Para enviar uma mensagem particular (inbox) use o comando @<nome_de_usuario> <mensagem> indicando o usuário que deseja falar e qual a mensagem.
+10. Se deseja expulsar algum usuário da sala, use o comando "ban @<nome_de_usuario>". Após um usuário receber pelo menos 2/3 da quantidade de usuários em ban's, ele será expulso. Os ban's são contabilizados com pelo menos 10 segundos de diferença desde o último.
