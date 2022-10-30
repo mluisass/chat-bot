@@ -130,7 +130,7 @@ class UDP:
             # Envia primeira mensagem do buffer
             msg, address_to = self.send_buffer[0]
             self.send_buffer.pop(0)
-            self.__rdt_send(msg, 0, address_to) # mileto, pq o tempo é zero?
+            self.__rdt_send(msg, 0, address_to)
              
         
 
