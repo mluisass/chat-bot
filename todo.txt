@@ -1,7 +1,0 @@
-1 - Mensagem privada
-2 - Ban
-3 - Adicionar desconexão ao matar o terminal
-4 - Aprumar o que precisa
-5 - Colocar comentários onde não tem 
-6 - Atualizar README
-7 - Entregar esta merda
